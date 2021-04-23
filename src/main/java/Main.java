@@ -1,18 +1,22 @@
 import java.util.*;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import static java.util.concurrent.Executors.newFixedThreadPool;
 
 public class Main {
     private static final int MAX_OPERATIONS = 2;
+    // Approximate number to process per thread
     private static final int BLOCK_SIZE = 1000;
+    // Maximum value to search to
     private static final int SEARCH_MAX = 1000;
 
     public static int[] inputs;
     public static Set<String> validOutputs;
 
+    private static List<Operation> operationsList;
+
+    // User function to set inputs
     private static void setInputs() {
         String[] days = {
                 "Monday",
@@ -29,6 +33,7 @@ public class Main {
                 .toArray();
     }
 
+    // User function to set valid outputs
     private static void setOutputs() {
         validOutputs = new HashSet<>();
 
@@ -42,6 +47,7 @@ public class Main {
         }
     }
 
+    // User transformation function to result that occurs at end
     public static int finalTransformation(int input) {
         return input % 7;
     }
@@ -51,15 +57,19 @@ public class Main {
         setOutputs();
 
         Runtime runtime = Runtime.getRuntime();
-        ExecutorService service = newFixedThreadPool(runtime.availableProcessors());
+        int threads = runtime.availableProcessors();
+        ExecutorService service = newFixedThreadPool(threads);
 
-        List<Operation> operationsList = new ArrayList<>();
+        operationsList = new ArrayList<>();
         operationsList.add(new Operation());
 
+        // Main thread starting
         while (operationsList.size() <= MAX_OPERATIONS) {
+            // Add new threads for each block
             int position = 1;
             while (position < SEARCH_MAX) {
                 int start = position;
+
                 int degree = operationsList.size();
                 int increment = (int) Math.pow(BLOCK_SIZE, degree);
                 position += increment;
@@ -69,31 +79,34 @@ public class Main {
                 service.execute(searcher);
             }
 
-            // Increment
-            if (operationsList.get(0).isLast()) {
-                int index = 0;
-                while (operationsList.get(index).isLast()) {
-                    if (index == operationsList.size() - 1) {
-                        operationsList.add(new Operation());
-                        break;
-                    } else {
-                        operationsList.get(index).next();
-                    }
-                    index++;
-                }
-                operationsList.get(index).next();
-            } else {
-                operationsList.get(0).next();
-            }
-
+            incrementOperations();
         }
 
         service.shutdown();
         service.awaitTermination(Long.MAX_VALUE, TimeUnit.MILLISECONDS);
     }
 
+    // Copy operations to an array
     private static Operation[] deepOpCopy(List<Operation> operationList) {
         return operationList.stream().map(Operation::new).toArray(Operation[]::new);
+    }
+
+    private static void incrementOperations() {
+        if (operationsList.get(0).isLast()) {
+            int index = 0;
+            while (operationsList.get(index).isLast()) {
+                if (index == operationsList.size() - 1) {
+                    operationsList.add(new Operation());
+                    break;
+                } else {
+                    operationsList.get(index).next();
+                }
+                index++;
+            }
+            operationsList.get(index).next();
+        } else {
+            operationsList.get(0).next();
+        }
     }
 
 }
