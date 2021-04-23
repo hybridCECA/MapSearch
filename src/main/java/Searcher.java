@@ -13,19 +13,18 @@ public class Searcher implements Runnable{
 
         operands = new int[operations.length];
         Arrays.fill(operands, start);
-
     }
 
     public void run() {
+        System.out.println("Search start");
+        System.out.println(Arrays.toString(operations));
+        System.out.println("From " + start + " to " + end);
+
         operands[0]--;
 
         while (incrementOperands()) {
             compute();
         }
-
-        System.out.println("Search completed");
-        System.out.println(Arrays.toString(operations));
-        System.out.println("From " + start + " to " + end);
     }
 
     private void compute() {

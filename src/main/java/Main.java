@@ -5,9 +5,9 @@ import java.util.concurrent.TimeUnit;
 import static java.util.concurrent.Executors.newFixedThreadPool;
 
 public class Main {
-    private static final int MAX_OPERATIONS = 2;
+    private static final int MAX_OPERATIONS = 3;
     // Approximate number to process per thread
-    private static final int BLOCK_SIZE = 1000;
+    private static final int BLOCK_SIZE = 10000;
     // Maximum value to search to
     private static final int SEARCH_MAX = 1000;
 
@@ -72,7 +72,12 @@ public class Main {
 
                 int degree = operationsList.size();
                 int increment = (int) Math.pow(BLOCK_SIZE, degree);
-                position += increment;
+
+                try {
+                    position = Math.addExact(position, increment);
+                } catch (ArithmeticException e) {
+                    position = SEARCH_MAX;
+                }
                 position = Math.min(position, SEARCH_MAX);
 
                 Searcher searcher = new Searcher(deepOpCopy(operationsList), start, position);
