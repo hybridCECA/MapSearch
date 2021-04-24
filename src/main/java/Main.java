@@ -7,7 +7,7 @@ import static java.util.concurrent.Executors.newFixedThreadPool;
 public class Main {
     private static final int MAX_OPERATIONS = 3;
     // Approximate number to process per thread
-    private static final int BLOCK_SIZE = 10000;
+    private static final int BLOCK_SIZE = 10000000;
     // Maximum value to search to
     private static final int SEARCH_MAX = 1000;
 
@@ -16,20 +16,22 @@ public class Main {
 
     private static List<Operation> operationsList;
 
+    private static int sumString(String s) {
+        int sum = 0;
+        for (char c : s.toCharArray()) {
+            sum += c;
+        }
+        return sum;
+    }
+
     // User function to set inputs
     private static void setInputs() {
-        String[] days = {
-                "Monday",
-                "Tuesday",
-                "Wednesday",
-                "Thursday",
-                "Friday",
-                "Saturday",
-                "Sunday"
+        String[] months = {
+                "jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"
         };
 
-        inputs = Arrays.stream(days)
-                .mapToInt(s -> (s + s + s).charAt(12))
+        inputs = Arrays.stream(months)
+                .mapToInt(Main::sumString)
                 .toArray();
     }
 
@@ -37,7 +39,7 @@ public class Main {
     private static void setOutputs() {
         validOutputs = new HashSet<>();
 
-        int[] numbers = new int[]{0, 1, 2, 3, 4, 5, 6};
+        int[] numbers = new int[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11};
         for (int i = 0; i < numbers.length; i++) {
             StringBuilder output = new StringBuilder();
             for (int j = 0; j < numbers.length; j++) {
@@ -45,11 +47,12 @@ public class Main {
             }
             validOutputs.add(output.toString());
         }
+
     }
 
     // User transformation function to result that occurs at end
     public static int finalTransformation(int input) {
-        return input % 7;
+        return input % 12;
     }
 
     public static void main(String[] args) throws InterruptedException {
@@ -71,7 +74,8 @@ public class Main {
                 int start = position;
 
                 int degree = operationsList.size();
-                int increment = (int) Math.pow(BLOCK_SIZE, degree);
+                int increment = (int) Math.pow(BLOCK_SIZE + Math.pow(position, degree), 1.0/degree) - position + 1;
+                increment = Math.max(increment, 2);
 
                 try {
                     position = Math.addExact(position, increment);

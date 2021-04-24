@@ -12,7 +12,8 @@ public class Searcher implements Runnable{
         this.end = end;
 
         operands = new int[operations.length];
-        Arrays.fill(operands, start);
+        Arrays.fill(operands, 1);
+        operands[0] = start;
     }
 
     public void run() {
@@ -48,21 +49,34 @@ public class Searcher implements Runnable{
     // Returns false if we are done
     private boolean incrementOperands() {
         int index = 0;
-        if (operands[0] == end) {
-            while (operands[index] == end) {
-                operands[index] = start;
-                index++;
-
-                if (index == operands.length) {
-                    return false;
-                }
+        boolean setFirst = false;
+        while (operands[index] == end - 1) {
+            setFirst = true;
+            if (index != 0) {
+                operands[index] = 1;
             }
+            index++;
 
-            operands[index]++;
-        } else {
-            operands[0]++;
+            if (index == operands.length) {
+                return false;
+            }
+        }
+
+        operands[index]++;
+
+        if (setFirst) {
+            operands[0] = allNonFirstLessThanStart() ? start : 1;
         }
 
         return true;
+    }
+
+    private boolean allNonFirstLessThanStart() {
+        boolean valid = true;
+        for (int i = 1; i < operands.length; i++) {
+            valid = valid && operands[i] < start;
+        }
+
+        return valid;
     }
 }
