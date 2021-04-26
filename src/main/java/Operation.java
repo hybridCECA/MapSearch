@@ -3,10 +3,9 @@ public class Operation {
         0: Modulo
         1: Xor
         2: Multiply
-        3: Divide
      */
     private int type;
-    private final static int NUM_OPERATIONS = 4;
+    private final static int NUM_OPERATIONS = 3;
 
     public Operation(Operation operation) {
         this.type = operation.type;
@@ -32,8 +31,6 @@ public class Operation {
                 return lhs ^ rhs;
             case 2:
                 return lhs * rhs;
-            case 3:
-                return lhs / rhs;
         }
 
         throw new RuntimeException("Operator type out of bounds");

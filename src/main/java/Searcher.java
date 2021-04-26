@@ -5,11 +5,13 @@ public class Searcher implements Runnable{
     private int[] operands;
     private int start;
     private int end;
+    private int blockId;
 
-    public Searcher(Operation[] operations, int start, int end) {
+    public Searcher(Operation[] operations, int start, int end, int blockId) {
         this.operations = operations;
         this.start = start;
         this.end = end;
+        this.blockId = blockId;
 
         operands = new int[operations.length];
         Arrays.fill(operands, 1);
@@ -17,32 +19,29 @@ public class Searcher implements Runnable{
     }
 
     public void run() {
-        System.out.println("Search start");
-        System.out.println(Arrays.toString(operations));
-        System.out.println("From " + start + " to " + end);
+        System.out.println("ID: " + blockId + " " + Arrays.toString(operations) + " " + start + " to " + end);
 
         operands[0]--;
 
         while (incrementOperands()) {
             compute();
         }
+
+        IdManager.markIdComplete(blockId);
     }
 
     private void compute() {
-        StringBuilder result = new StringBuilder();
-        for (int input : Main.inputs) {
-            int value = input;
-            for (int i = 0; i < operations.length; i++) {
-                value = operations[i].execute(value, operands[i]);
+        int[] result = Arrays.copyOf(Main.inputs, Main.inputs.length);
+
+        for (int i = 0; i < Main.inputs.length; i++) {
+            for (int j = 0; j < operations.length; j++) {
+                result[i] = operations[j].execute(result[i], operands[j]);
             }
-            value = Main.finalTransformation(value);
-            result.append(value).append(" ");
         }
 
-        if (Main.validOutputs.contains(result.toString())) {
-            System.out.println("FOUND: ");
-            System.out.println(Arrays.toString(operations));
-            System.out.println(Arrays.toString(operands));
+        String value = Main.validate(result);
+        if (value != null) {
+            System.out.println("FOUND: " + Arrays.toString(operations) + " " + Arrays.toString(operands) + " " + value);
         }
     }
 

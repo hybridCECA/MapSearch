@@ -1,15 +1,20 @@
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.IntStream;
 
 import static java.util.concurrent.Executors.newFixedThreadPool;
 
 public class Main {
-    private static final int MAX_OPERATIONS = 3;
+    private static final int MAX_OPERATIONS = 10;
     // Approximate number to process per thread
     private static final int BLOCK_SIZE = 10000000;
     // Maximum value to search to
     private static final int SEARCH_MAX = 1000;
+    // Threads to schedule
+    private static final int MAX_SCHEDULE = 64;
+    // Start scheduling when this many threads are left
+    private static final int MIN_SCHEDULE = MAX_SCHEDULE / 2;
 
     public static int[] inputs;
     public static Set<String> validOutputs;
@@ -25,7 +30,8 @@ public class Main {
     }
 
     // User function to set inputs
-    private static void setInputs() {
+    private static void setup() {
+        // Set inputs
         String[] months = {
                 "jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"
         };
@@ -33,13 +39,21 @@ public class Main {
         inputs = Arrays.stream(months)
                 .mapToInt(Main::sumString)
                 .toArray();
-    }
 
-    // User function to set valid outputs
-    private static void setOutputs() {
+/*
+        String[] days = {"Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"};
+        inputs = Arrays.stream(days)
+                .map(s -> s + s + s)
+                .mapToInt(s -> s.charAt(12))
+                .toArray();
+
+ */
+
+
+        // Set outputs
         validOutputs = new HashSet<>();
-
-        int[] numbers = new int[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11};
+        // Allows numbers [0, inputs.length) in increasing order as outputs
+        int[] numbers = IntStream.range(0, inputs.length).toArray();
         for (int i = 0; i < numbers.length; i++) {
             StringBuilder output = new StringBuilder();
             for (int j = 0; j < numbers.length; j++) {
@@ -47,36 +61,58 @@ public class Main {
             }
             validOutputs.add(output.toString());
         }
-
     }
 
-    // User transformation function to result that occurs at end
-    public static int finalTransformation(int input) {
-        return input % 12;
+    public static String validate(int[] value) {
+        StringBuilder builder = new StringBuilder();
+        for (int i : value) {
+            builder.append(i % inputs.length).append(" ");
+        }
+
+        if (validOutputs.contains(builder.toString())) {
+            return builder.toString();
+        } else {
+            return null;
+        }
     }
 
     public static void main(String[] args) throws InterruptedException {
-        setInputs();
-        setOutputs();
+        IdManager.setup();
+        setup();
+
+        System.out.println("MapSearch running with");
+        System.out.println("Inputs: " + Arrays.toString(inputs));
+        System.out.println("Outputs: " + validOutputs.toString());
 
         Runtime runtime = Runtime.getRuntime();
         int threads = runtime.availableProcessors();
+        System.out.println(threads + " thread(s)");
         ExecutorService service = newFixedThreadPool(threads);
 
         operationsList = new ArrayList<>();
         operationsList.add(new Operation());
+        int blockId = 0;
+        int minBlockId = IdManager.getMaxComputedId() + 1;
 
         // Main thread starting
         while (operationsList.size() <= MAX_OPERATIONS) {
             // Add new threads for each block
             int position = 1;
             while (position < SEARCH_MAX) {
+                // Wait if enough are scheduled
+                if (blockId > IdManager.getMaxComputedId() + MAX_SCHEDULE) {
+                    IdManager.awaitId(blockId - MIN_SCHEDULE);
+                }
+
                 int start = position;
 
+                // Compute increment so that block size is somewhat constant
+                // Increment has a minimum of 2
                 int degree = operationsList.size();
                 int increment = (int) Math.pow(BLOCK_SIZE + Math.pow(position, degree), 1.0/degree) - position + 1;
                 increment = Math.max(increment, 2);
 
+                // Add increment with a maximum of SEARCH_MAX
                 try {
                     position = Math.addExact(position, increment);
                 } catch (ArithmeticException e) {
@@ -84,8 +120,12 @@ public class Main {
                 }
                 position = Math.min(position, SEARCH_MAX);
 
-                Searcher searcher = new Searcher(deepOpCopy(operationsList), start, position);
-                service.execute(searcher);
+                // Ensure correct blockId
+                if (blockId >= minBlockId) {
+                    Searcher searcher = new Searcher(deepOpCopy(operationsList), start, position, blockId);
+                    service.execute(searcher);
+                }
+                blockId++;
             }
 
             incrementOperations();
